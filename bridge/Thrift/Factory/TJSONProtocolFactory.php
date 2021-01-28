@@ -17,7 +17,7 @@
  * specific language governing permissions and limitations
  * under the License.
  *
- * @package thrifts.protocol
+ * @package thrift.protocol
  */
 
 namespace Thrift\Factory;

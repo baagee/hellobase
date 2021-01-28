@@ -8,13 +8,26 @@ use Hbase\TIncrement;
 use Hbase\TRowResult;
 use HelloBase\Contracts\Table as TableContract;
 
-;
-
+/**
+ * Class Table
+ * @package HelloBase
+ */
 class Table implements TableContract
 {
+    /**
+     * @var string
+     */
     protected $table;
+    /**
+     * @var Connection
+     */
     protected $connection;
 
+    /**
+     * Table constructor.
+     * @param string     $table
+     * @param Connection $connection
+     */
     public function __construct(string $table, Connection $connection)
     {
         $this->table = $table;
@@ -22,8 +35,9 @@ class Table implements TableContract
     }
 
     /**
+     * 保存一行数据
      * @param string $key
-     * @param array $values
+     * @param array  $values
      * @return bool
      * @throws Exception
      */
@@ -38,6 +52,14 @@ class Table implements TableContract
         }
     }
 
+    /**
+     * 获取一行数据某些列
+     * @param string $row
+     * @param array  $columns
+     * @param null   $timestamp
+     * @return array
+     * @throws IOError
+     */
     public function row(string $row, array $columns = [], $timestamp = null): array
     {
         $client = $this->connection->getClient();
@@ -51,6 +73,14 @@ class Table implements TableContract
         return count($data) ? $this->formatRow($data[0]) : [];
     }
 
+    /**
+     * 获取多行数据
+     * @param array $rows
+     * @param array $columns
+     * @param null  $timestamp
+     * @return array
+     * @throws IOError
+     */
     public function rows(array $rows, array $columns = [], $timestamp = null): array
     {
         $client = $this->connection->getClient();
@@ -65,10 +95,11 @@ class Table implements TableContract
     }
 
     /**
-     * @param string $start
-     * @param string $stop
-     * @param array $columns
-     * @param array $with
+     * 扫描获取列表 左闭右开
+     * @param string $start   开始位置
+     * @param string $stop    结束位置 不包括结束
+     * @param array  $columns 列
+     * @param array  $with    其他条件
      * @return \Generator
      * @throws IOError
      * @throws \Hbase\IllegalArgument
@@ -101,9 +132,9 @@ class Table implements TableContract
     }
 
     /**
-     * @param string $row
-     * @param string $column
-     * @param int $amount
+     * @param string $row 自增某一列的值
+     * @param string $column 列名
+     * @param int    $amount 自增大小
      * @return bool
      * @throws \Hbase\IOError
      */
@@ -125,16 +156,44 @@ class Table implements TableContract
         return true;
     }
 
+    /**
+     * 删除某一行某一列
+     * @param string $row    行
+     * @param string $column 列
+     * @throws IOError
+     * @return bool
+     */
+    public function delete(string $row, $column = '')
+    {
+        if (!empty($column)) {
+            $this->connection->getClient()->deleteAll($this->table, $row, $column, []);
+        } else {
+            $this->connection->getClient()->deleteAllRow($this->table, $row, []);
+        }
+        return true;
+    }
+
+    /**
+     * 获取当前表名
+     * @return string|string
+     */
     public function getTable()
     {
         return $this->table;
     }
 
+    /**
+     * @return Connection
+     */
     public function getConnection(): Connection
     {
         return $this->connection;
     }
 
+    /**
+     * @param array $rows
+     * @return array
+     */
     protected function formatRows(array $rows)
     {
         $formatted = [];
@@ -146,6 +205,10 @@ class Table implements TableContract
         return $formatted;
     }
 
+    /**
+     * @param TRowResult $row
+     * @return array
+     */
     protected function formatRow(TRowResult $row)
     {
         $formatted = [];

@@ -18,7 +18,7 @@
  * specific language governing permissions and limitations
  * under the License.
  *
- * @package thrifts.protocol
+ * @package thrift.protocol
  */
 
 namespace Thrift\Protocol;
@@ -32,7 +32,7 @@ use Thrift\Protocol\SimpleJSON\MapContext;
 use Thrift\Protocol\SimpleJSON\CollectionMapKeyException;
 
 /**
- * SimpleJSON implementation of thrifts protocol, ported from Java.
+ * SimpleJSON implementation of thrift protocol, ported from Java.
  */
 class TSimpleJSONProtocol extends TProtocol
 {
@@ -54,7 +54,8 @@ class TSimpleJSONProtocol extends TProtocol
     /**
      * Push a new write context onto the stack.
      */
-    protected function pushWriteContext(Context $c) {
+    protected function pushWriteContext(Context $c)
+    {
         $this->writeContextStack_[] = $this->writeContext_;
         $this->writeContext_ = $c;
     }
@@ -62,14 +63,16 @@ class TSimpleJSONProtocol extends TProtocol
     /**
      * Pop the last write context off the stack
      */
-    protected function popWriteContext() {
+    protected function popWriteContext()
+    {
         $this->writeContext_ = array_pop($this->writeContextStack_);
     }
 
     /**
      * Used to make sure that we are not encountering a map whose keys are containers
      */
-    protected function assertContextIsNotMapKey($invalidKeyType) {
+    protected function assertContextIsNotMapKey($invalidKeyType)
+    {
         if ($this->writeContext_->isMapKey()) {
             throw new CollectionMapKeyException(
                 "Cannot serialize a map with keys that are of type " .
@@ -269,7 +272,7 @@ class TSimpleJSONProtocol extends TProtocol
     /**
      * Reading methods.
      *
-     * simplejson is not meant to be read back into thrifts
+     * simplejson is not meant to be read back into thrift
      * - see http://wiki.apache.org/thrift/ThriftUsageJava
      * - use JSON instead
      */

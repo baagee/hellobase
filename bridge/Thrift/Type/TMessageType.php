@@ -17,7 +17,7 @@
  * specific language governing permissions and limitations
  * under the License.
  *
- * @package thrifts
+ * @package thrift
  */
 
 namespace Thrift\Type;
@@ -27,8 +27,8 @@ namespace Thrift\Type;
  */
 class TMessageType
 {
-  const CALL  = 1;
-  const REPLY = 2;
-  const EXCEPTION = 3;
-  const ONEWAY = 4;
+    const CALL  = 1;
+    const REPLY = 2;
+    const EXCEPTION = 3;
+    const ONEWAY = 4;
 }

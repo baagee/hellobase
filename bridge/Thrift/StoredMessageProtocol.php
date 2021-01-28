@@ -17,24 +17,37 @@
  * specific language governing permissions and limitations
  * under the License.
  *
- * @package thrift.protocol
+ * @package thrift.processor
  */
 
-namespace Thrift\Factory;
+namespace Thrift;
 
-use Thrift\Protocol\TCompactProtocol;
+use Thrift\Protocol\TProtocol;
+use Thrift\Protocol\TProtocolDecorator;
 
 /**
- * Compact Protocol Factory
+ *  Our goal was to work with any protocol. In order to do that, we needed
+ *  to allow them to call readMessageBegin() and get the Message in exactly
+ *  the standard format, without the service name prepended to the Message name.
  */
-class TCompactProtocolFactory implements TProtocolFactory
+class StoredMessageProtocol extends TProtocolDecorator
 {
-    public function __construct()
+    private $fname_;
+    private $mtype_;
+    private $rseqid_;
+
+    public function __construct(TProtocol $protocol, $fname, $mtype, $rseqid)
     {
+        parent::__construct($protocol);
+        $this->fname_  = $fname;
+        $this->mtype_  = $mtype;
+        $this->rseqid_ = $rseqid;
     }
 
-    public function getProtocol($trans)
+    public function readMessageBegin(&$name, &$type, &$seqid)
     {
-        return new TCompactProtocol($trans);
+        $name  = $this->fname_;
+        $type  = $this->mtype_;
+        $seqid = $this->rseqid_;
     }
 }

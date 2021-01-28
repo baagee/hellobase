@@ -17,7 +17,7 @@
  * specific language governing permissions and limitations
  * under the License.
  *
- * @package thrifts.protocol
+ * @package thrift.protocol
  */
 
 namespace Thrift\Protocol\SimpleJSON;
@@ -43,11 +43,10 @@ class StructContext extends Context
         } else {
             $this->p_->getTransport()->write(
                 $this->colon_ ?
-                TSimpleJSONProtocol::COLON :
-                TSimpleJSONProtocol::COMMA
+                    TSimpleJSONProtocol::COLON :
+                    TSimpleJSONProtocol::COMMA
             );
             $this->colon_ = !$this->colon_;
         }
     }
 }
-

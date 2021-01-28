@@ -15,16 +15,21 @@ use Thrift\Protocol\TCompactProtocol;
 use Thrift\Transport\TBufferedTransport;
 use Thrift\Transport\TFramedTransport;
 use Thrift\Transport\TSocket;
+use Thrift\Transport\TSocketPool;
 use Thrift\Transport\TTransport;
 
+/**
+ * Class Connection
+ * @package HelloBase
+ */
 class Connection implements ConnectionContract
 {
     const TRANSPORT_BUFFERED = 'buffered';
-    const TRANSPORT_FRAMED = 'framed';
+    const TRANSPORT_FRAMED   = 'framed';
 
-    const PROTOCOL_BINARY = 'binary';
+    const PROTOCOL_BINARY             = 'binary';
     const PROTOCOL_BINARY_ACCELERATED = 'binary_accelerated';
-    const PROTOCOL_COMPACT = 'compact';
+    const PROTOCOL_COMPACT            = 'compact';
 
     protected $config;
 
@@ -60,7 +65,19 @@ class Connection implements ConnectionContract
 
     /**
      * Connection constructor.
-     * @param array $config
+     * @param array $config [
+     *                      'host' => '',
+     *                      'port' => '',
+     *                      'auto_connect' => false,
+     *                      'persist' => false,
+     *                      'debug_handler' => function ($msg) {
+     *
+     * },
+     * 'send_timeout' => 700000,
+     * 'recv_timeout' => 700000,
+     * 'transport' => Connection::TRANSPORT_FRAMED,
+     * 'protocol' => Connection::PROTOCOL_COMPACT,
+     *                      ]
      */
     public function __construct(array $config = [])
     {
@@ -71,13 +88,22 @@ class Connection implements ConnectionContract
         }
     }
 
+    /**
+     * 连接hbase
+     */
     public function connect()
     {
         $config = $this->config;
-        $this->socket = new TSocket($config['host'], $config['port'], $config['persist'], $config['debug_handler']);
+        if (is_array($config['host']) && is_array($config['port'])) {
+            $this->socket = new TSocketPool($config['host'], $config['port'], $config['persist'], $config['debug_handler']);
+        } else {
+            $this->socket = new TSocket($config['host'], $config['port'], $config['persist'], $config['debug_handler']);
+        }
         $this->socket->setSendTimeout($config['send_timeout']);
         $this->socket->setRecvTimeout($config['recv_timeout']);
-
+        if (!empty($config['debug_handler']) && is_callable($config['debug_handler'])) {
+            $this->socket->setDebug(true);#为了打印日志
+        }
         switch ($config['transport']) {
             case self::TRANSPORT_BUFFERED:
                 $this->transport = new TBufferedTransport($this->socket);
@@ -101,7 +127,7 @@ class Connection implements ConnectionContract
                 break;
             case self::PROTOCOL_COMPACT:
                 $this->protocol = new TCompactProtocol($this->transport);
-               break;
+                break;
             default:
                 throw new InvalidArgumentException(sprintf(
                     "Invalid protocol config: '%s'",
@@ -109,19 +135,36 @@ class Connection implements ConnectionContract
                 ));
         }
 
-        $this->client = new HbaseClient($this->protocol);
+        if (!is_null($config['debug_handler']) && is_callable($config['debug_handler'])) {
+            $this->client = HelloBaseClient::getClient($this->protocol, $config['debug_handler']);
+        } else {
+            $this->client = new HbaseClient($this->protocol);
+        }
 
         if ($this->transport->isOpen()) {
             return;
         }
 
         try {
-            $this->transport->open();
+            $retry = intval($config['connect_retry'] ?? 0);
+            for ($i = 0; $i <= $retry; $i++) {
+                try {
+                    $this->transport->open();
+                    break;
+                } catch (Exception $e) {
+                    if ($i == $retry) {
+                        throw $e;
+                    }
+                }
+            }
         } catch (Exception $exception) {
             $this->socket->close();
         }
     }
 
+    /**
+     * 关闭连接
+     */
     public function close()
     {
         if ($this->transport === null || !$this->transport->isOpen()) {
@@ -156,6 +199,15 @@ class Connection implements ConnectionContract
         }
     }
 
+    /**
+     * 创建表
+     * @param string $table          表名
+     * @param array  $columnFamilies 表的列定义
+     * @return bool
+     * @throws IOError
+     * @throws \Hbase\AlreadyExists
+     * @throws \Hbase\IllegalArgument
+     */
     public function createTable($table, array $columnFamilies): bool
     {
         $descriptors = [];
@@ -171,11 +223,31 @@ class Connection implements ConnectionContract
         return true;
     }
 
-    public function getClient(): HbaseClient
+    /**
+     * 删除表 先禁用然后删除
+     * @param string $tableName
+     * @return bool
+     * @throws IOError
+     */
+    public function deleteTable(string $tableName)
+    {
+        $this->client->disableTable($tableName);
+        $this->client->deleteTable($tableName);
+        return true;
+    }
+
+    /**
+     * @return HbaseClient
+     */
+    public function getClient()
     {
         return $this->client;
     }
 
+    /**
+     * 设置配置
+     * @param array $config 配置数组
+     */
     public function prepareConfig(array $config)
     {
         $this->config = array_merge([
@@ -191,6 +263,10 @@ class Connection implements ConnectionContract
         ], $config);
     }
 
+    /**
+     * 获取当前配置
+     * @return array
+     */
     public function getConfig(): array
     {
         return $this->config;

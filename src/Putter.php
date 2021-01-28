@@ -7,9 +7,20 @@ use Hbase\BatchMutation;
 use Hbase\HbaseClient;
 use Hbase\Mutation;
 
+/**
+ * 数据保存类
+ * Class Putter
+ * @package HelloBase
+ */
 class Putter
 {
+    /**
+     * @var Table
+     */
     protected $table;
+    /**
+     * @var array
+     */
     protected $mutations = [];
 
     /**
@@ -21,6 +32,11 @@ class Putter
         $this->table = $table;
     }
 
+    /**
+     * 保存一条数据
+     * @param       $row
+     * @param array $data
+     */
     public function pick($row, array $data)
     {
         if (!isset($this->mutations[$row])) {
@@ -68,6 +84,9 @@ class Putter
         return count($commands);
     }
 
+    /**
+     *
+     */
     public function reset()
     {
         $this->mutations = [];

@@ -17,7 +17,7 @@
  * specific language governing permissions and limitations
  * under the License.
  *
- * @package thrifts.protocol
+ * @package thrift.protocol
  */
 
 namespace Thrift\Factory;
@@ -27,10 +27,10 @@ namespace Thrift\Factory;
  */
 interface TProtocolFactory
 {
-  /**
-   * Build a protocol from the base transport
-   *
-   * @return Thrift\Protocol\TProtocol protocol
-   */
-  public function getProtocol($trans);
+    /**
+     * Build a protocol from the base transport
+     *
+     * @return Thrift\Protocol\TProtocol protocol
+     */
+    public function getProtocol($trans);
 }

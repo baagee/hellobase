@@ -20,7 +20,7 @@
  * ClassLoader to load Thrift library and definitions
  * Inspired from UniversalClassLoader from Symfony 2
  *
- * @package thrifts.classloader
+ * @package thrift.classloader
  */
 
 namespace Thrift\ClassLoader;
@@ -40,48 +40,48 @@ class ThriftClassLoader
     protected $definitions = array();
 
     /**
-     * Do we use APC cache ?
+     * Do we use APCu cache ?
      * @var boolean
      */
-    protected $apc = false;
+    protected $apcu = false;
 
     /**
-     * APC Cache prefix
+     * APCu Cache prefix
      * @var string
      */
-    protected $apc_prefix;
+    protected $apcu_prefix;
 
     /**
-     * Set autoloader to use APC cache
+     * Set autoloader to use APCu cache
      * @param boolean $apc
-     * @param string  $apc_prefix
+     * @param string $apcu_prefix
      */
-    public function __construct($apc = false, $apc_prefix = null)
+    public function __construct($apc = false, $apcu_prefix = null)
     {
-        $this->apc = $apc;
-        $this->apc_prefix = $apc_prefix;
+        $this->apcu = $apc;
+        $this->apcu_prefix = $apcu_prefix;
     }
 
     /**
      * Registers a namespace.
      *
-     * @param string       $namespace The namespace
-     * @param array|string $paths     The location(s) of the namespace
+     * @param string $namespace The namespace
+     * @param array|string $paths The location(s) of the namespace
      */
     public function registerNamespace($namespace, $paths)
     {
-        $this->namespaces[$namespace] = (array) $paths;
+        $this->namespaces[$namespace] = (array)$paths;
     }
 
     /**
      * Registers a Thrift definition namespace.
      *
-     * @param string       $namespace The definition namespace
-     * @param array|string $paths     The location(s) of the definition namespace
+     * @param string $namespace The definition namespace
+     * @param array|string $paths The location(s) of the definition namespace
      */
     public function registerDefinition($namespace, $paths)
     {
-        $this->definitions[$namespace] = (array) $paths;
+        $this->definitions[$namespace] = (array)$paths;
     }
 
     /**
@@ -101,24 +101,22 @@ class ThriftClassLoader
      */
     public function loadClass($class)
     {
-        if (
-            (true === $this->apc && ($file = $this->findFileInApc($class))) or
+        if ((true === $this->apcu && ($file = $this->findFileInApcu($class))) or
             ($file = $this->findFile($class))
-        )
-        {
+        ) {
             require_once $file;
         }
     }
 
     /**
-     * Loads the given class or interface in APC.
+     * Loads the given class or interface in APCu.
      * @param  string $class The name of the class
      * @return string
      */
-    protected function findFileInApc($class)
+    protected function findFileInApcu($class)
     {
-        if (false === $file = apc_fetch($this->apc_prefix.$class)) {
-            apc_store($this->apc_prefix.$class, $file = $this->findFile($class));
+        if (false === $file = apcu_fetch($this->apcu_prefix . $class)) {
+            apcu_store($this->apcu_prefix . $class, $file = $this->findFile($class));
         }
 
         return $file;
@@ -150,10 +148,10 @@ class ThriftClassLoader
                 foreach ($dirs as $dir) {
                     $className = substr($class, $pos + 1);
 
-                    $file = $dir.DIRECTORY_SEPARATOR.
-                                 str_replace('\\', DIRECTORY_SEPARATOR, $namespace).
-                                 DIRECTORY_SEPARATOR.
-                                 $className.'.php';
+                    $file = $dir . DIRECTORY_SEPARATOR .
+                        str_replace('\\', DIRECTORY_SEPARATOR, $namespace) .
+                        DIRECTORY_SEPARATOR .
+                        $className . '.php';
 
                     if (file_exists($file)) {
                         return $file;
@@ -185,20 +183,18 @@ class ThriftClassLoader
                      * Available in service: Interface, Client, Processor, Rest
                      * And every service methods (_.+)
                      */
-                    if(
-                        0 === preg_match('#(.+)(if|client|processor|rest)$#i', $class, $n) and
+                    if (0 === preg_match('#(.+)(if|client|processor|rest)$#i', $class, $n) and
                         0 === preg_match('#(.+)_[a-z0-9]+_(args|result)$#i', $class, $n)
-                    )
-                    {
+                    ) {
                         $className = 'Types';
                     } else {
                         $className = $n[1];
                     }
 
-                    $file = $dir.DIRECTORY_SEPARATOR .
-                                 str_replace('\\', DIRECTORY_SEPARATOR, $namespace) .
-                                 DIRECTORY_SEPARATOR .
-                                 $className . '.php';
+                    $file = $dir . DIRECTORY_SEPARATOR .
+                        str_replace('\\', DIRECTORY_SEPARATOR, $namespace) .
+                        DIRECTORY_SEPARATOR .
+                        $className . '.php';
 
                     if (file_exists($file)) {
                         return $file;
